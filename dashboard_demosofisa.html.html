@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Executivo - Imóveis Agências Banco Sofisa (2024-2026)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- jQuery & DataTables -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sofisa: {
+                            green: '#00A86B',
+                            darkGreen: '#007A4B',
+                            navy: '#0F2C59',
+                            dark: '#0A192F',
+                            light: '#F4F7F6',
+                            accent: '#38BDF8'
+                        },
+                        awake: {
+                            cyan: '#38BDF8',
+                            darkCyan: '#0284C7',
+                            slate: '#1E293B'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Scrollbar customizada e ajustes do DataTables para Dark Mode */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+        
+        .dataTables_wrapper .dataTables_length, 
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_processing,
+        .dataTables_wrapper .dataTables_paginate {
+            color: #94A3B8 !important;
+            font-size: 0.875rem;
+            margin-bottom: 12px;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            background-color: #020617;
+            border: 1px solid #334155;
+            color: #F8FAFC;
+            border-radius: 0.375rem;
+            padding: 4px 8px;
+        }
+        .dataTables_wrapper .dataTables_length select {
+            background-color: #020617;
+            border: 1px solid #334155;
+            color: #F8FAFC;
+            border-radius: 0.375rem;
+            padding: 2px 6px;
+        }
+        table.dataTable tbody tr { background-color: transparent !important; }
+        table.dataTable.no-footer { border-bottom: 1px solid #334155 !important; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            color: #94A3B8 !important;
+            border-radius: 0.375rem;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: #00A86B !important;
+            border-color: #00A86B !important;
+            color: white !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- TOP HEADER / NAVBAR -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Logos & Branding -->
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-3">
+                        <!-- Logo Sofisa -->
+                        <div class="bg-white p-1.5 rounded-lg border border-slate-700 shadow-sm flex items-center justify-center h-11">
+                            <img src="sofisalogo.png" alt="Banco Sofisa" class="h-8 object-contain" onerror="this.onerror=null; this.src='https://via.placeholder.com/120x40/ffffff/00a86b?text=SOFISA';">
+                        </div>
+                        
+                        <!-- Separador -->
+                        <div class="h-8 w-[1px] bg-slate-700"></div>
+
+                        <!-- Logo Awake Brasil -->
+                        <div class="bg-slate-950/80 p-1.5 rounded-lg border border-slate-800 flex items-center justify-center h-11 px-2">
+                            <img src="awakelogo_2.png" alt="Grupo Awake Brasil" class="h-7 object-contain" onerror="this.onerror=null; this.src='awakelogo.png';">
+                        </div>
+                    </div>
+
+                    <div class="hidden md:block">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-base text-white tracking-wide">Demonstrativo Comercial</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controls & Filters -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Filtro de Agência -->
+                    <div class="flex items-center bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                        <i data-lucide="building-2" class="w-4 h-4 text-awake-cyan ml-2 mr-2"></i>
+                        <span class="text-xs text-slate-400 mr-2 font-medium hidden sm:inline">Agência:</span>
+                        <select id="agencySelector" onchange="renderDashboard()" class="bg-slate-900 text-white font-semibold text-xs border border-slate-700 rounded px-2.5 py-1 focus:outline-none focus:border-awake-cyan max-w-[180px]">
+                            <option value="ALL" selected>Todas as Agências</option>
+                            <!-- Populated via Javascript -->
+                        </select>
+                    </div>
+
+                    <!-- Filtro de Ciclo/Ano -->
+                    <div class="flex items-center bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                        <i data-lucide="calendar" class="w-4 h-4 text-awake-cyan ml-2 mr-2"></i>
+                        <span class="text-xs text-slate-400 mr-2 font-medium hidden sm:inline">Ciclo:</span>
+                        <select id="yearSelector" onchange="renderDashboard()" class="bg-slate-900 text-sofisa-green font-bold text-xs border border-slate-700 rounded px-2.5 py-1 focus:outline-none focus:border-sofisa-green">
+                            <option value="2026" selected>2026 (Projeção Atual)</option>
+                            <option value="2025">2025 (Consolidado)</option>
+                            <option value="2024">2024 (Histórico)</option>
+                        </select>
+                    </div>
+
+                    <button onclick="exportSummaryPDF()" class="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-700 transition">
+                        <i data-lucide="download" class="w-4 h-4 text-awake-cyan"></i>
+                        <span class="hidden sm:inline">Exportar Relatório</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- EXECUTIVE SUMMARY HEADER CARD -->
+        <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 p-6 rounded-2xl border border-slate-800 relative overflow-hidden shadow-xl">
+            <div class="absolute -right-10 -bottom-10 opacity-10 text-sofisa-green pointer-events-none">
+                <i data-lucide="trending-down" class="w-64 h-64"></i>
+            </div>
+            <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Demonstrativo Comercial Comparativo de Agências</h2>
+                    <p class="text-sm text-slate-400 max-w-3xl mt-1">
+                        Monitoramento contínuo de <span id="summaryTotalAgencies" class="text-white font-semibold">22</span> agências em <span id="summaryStates" class="text-white font-semibold">12</span> estados do Brasil. Avaliação sistemática do m² locatício em raio de até 3 km para renegociações estratégicas e otimização de OPEX.
+                    </p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <div class="bg-slate-950/80 border border-slate-800 p-3 rounded-xl flex items-center space-x-3">
+                        <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                            <i data-lucide="trending-down" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-400">Desconto Médio vs Mercado</div>
+                            <div class="text-base font-bold text-emerald-400" id="avgDiscountPercent">-11,4%</div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-950/80 border border-slate-800 p-3 rounded-xl flex items-center space-x-3">
+                        <div class="p-2 bg-awake-cyan/10 text-awake-cyan rounded-lg">
+                            <i data-lucide="piggy-bank" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-400">Economia Anual Estimada</div>
+                            <div class="text-base font-bold text-awake-cyan" id="annualSavingsVal">R$ 249.800</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI METRICS GRID -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total Agências -->
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-lg relative overflow-hidden">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Agências Ativas</span>
+                    <i data-lucide="building" class="w-4 h-4 text-awake-cyan"></i>
+                </div>
+                <div class="text-3xl font-extrabold text-white" id="kpiAgencies">22</div>
+                <div class="flex items-center justify-between text-xs mt-2 text-slate-400 pt-2 border-t border-slate-800/80">
+                    <span>Imóvel Próprio: <strong class="text-white" id="kpiProprioCount">1</strong></span>
+                    <span>Locadas: <strong class="text-white" id="kpiLocadasCount">21</strong></span>
+                </div>
+            </div>
+
+            <!-- Custo Total Mensal -->
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-lg relative overflow-hidden">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider">OPEX Locação Mensal</span>
+                    <i data-lucide="dollar-sign" class="w-4 h-4 text-sofisa-green"></i>
+                </div>
+                <div class="text-3xl font-extrabold text-white" id="kpiTotalRent">R$ 161.425</div>
+                <div class="flex items-center justify-between text-xs mt-2 text-slate-400 pt-2 border-t border-slate-800/80">
+                    <span>Área Total: <strong class="text-white" id="kpiTotalArea">2.253 m²</strong></span>
+                    <span>Vagas: <strong class="text-white" id="kpiTotalVagas">42</strong></span>
+                </div>
+            </div>
+
+            <!-- Custo Médio por m² -->
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-lg relative overflow-hidden">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Custo Médio do m²</span>
+                    <i data-lucide="ruler" class="w-4 h-4 text-indigo-400"></i>
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <div class="text-3xl font-extrabold text-white" id="kpiAvgM2">R$ 71,63</div>
+                    <span class="text-xs text-slate-400">/ m²</span>
+                </div>
+                <div class="flex items-center justify-between text-xs mt-2 text-slate-400 pt-2 border-t border-slate-800/80">
+                    <span>Média Mercado: <strong class="text-slate-300" id="kpiMarketAvgM2">R$ 80,89</strong></span>
+                    <span id="kpiDiffPercent" class="font-bold text-emerald-400">-11,4%</span>
+                </div>
+            </div>
+
+            <!-- Eficiência de Negociação -->
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-lg relative overflow-hidden">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Status vs Mercado</span>
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-400"></i>
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <div class="text-3xl font-extrabold text-emerald-400" id="kpiBelowPercent">68.2%</div>
+                    <span class="text-xs text-slate-400">da carteira</span>
+                </div>
+                <div class="flex items-center space-x-2 text-xs mt-2 text-slate-400 pt-2 border-t border-slate-800/80">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Abaixo: <strong class="text-white" id="kpiBelowCount">15</strong></span>
+                    <span class="inline-block w-2 h-2 rounded-full bg-amber-500 ml-2"></span>
+                    <span>Na Média: <strong class="text-white" id="kpiAvgCount">5</strong></span>
+                    <span class="inline-block w-2 h-2 rounded-full bg-rose-500 ml-2"></span>
+                    <span>Acima: <strong class="text-white" id="kpiAboveCount">1</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHARTS SECTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Bar Chart: m² Agência vs Mercado -->
+            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl flex flex-col">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 mb-4 gap-2">
+                    <div>
+                        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                            <i data-lucide="bar-chart-3" class="w-5 h-5 text-sofisa-green"></i>
+                            <span>Comparativo Individual de m² Locatício (R$/m²)</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Ordenado numericamente de SA1 a SA23 | Valor Sofisa vs Mercado (Raio 3km)</p>
+                    </div>
+                    <div class="flex items-center space-x-3 text-xs">
+                        <div class="flex items-center space-x-1">
+                            <span class="w-3 h-3 bg-sofisa-green rounded-sm"></span>
+                            <span class="text-slate-300">Banco Sofisa</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <span class="w-3 h-3 bg-amber-500 rounded-sm"></span>
+                            <span class="text-slate-300">Mercado</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative flex-1 min-h-[300px]">
+                    <canvas id="barChartM2"></canvas>
+                </div>
+            </div>
+
+            <!-- Doughnut Chart: Distribution & Priority Renegotiation Card -->
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl flex flex-col justify-between">
+                <div>
+                    <div class="pb-4 border-b border-slate-800 mb-4">
+                        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                            <i data-lucide="donut" class="w-5 h-5 text-awake-cyan"></i>
+                            <span>Distribuição de Enquadramento</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Classificação das agências perante o mercado local</p>
+                    </div>
+                    <div class="relative h-[200px] flex items-center justify-center">
+                        <canvas id="doughnutChartStatus"></canvas>
+                    </div>
+                </div>
+
+                <!-- Quick Action Panel -->
+                <div class="mt-6 pt-4 border-t border-slate-800 bg-slate-950/50 p-4 rounded-xl border border-slate-800/80">
+                    <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400 mr-1"></i>
+                        <span>Foco de Renegociação Prioritária</span>
+                    </h4>
+                    <div id="priorityRenegotiationCard" class="text-xs text-slate-400 space-y-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADVANCED ANALYTICS -->
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                        <i data-lucide="line-chart" class="w-5 h-5 text-awake-cyan"></i>
+                        <span>Evolução Histórica do OPEX de Locação (2024 - 2026)</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">Trajetória do custo por m² médio e impacto das reestruturações de salas</p>
+                </div>
+            </div>
+            <div class="relative h-[240px]">
+                <canvas id="lineChartEvolucao"></canvas>
+            </div>
+        </div>
+
+        <!-- DETAILED DATATABLE SECTION -->
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-2">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                        <i data-lucide="table" class="w-5 h-5 text-sofisa-green"></i>
+                        <span>Matriz de Dados Consolidada das Agências</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">Ordenada em sequência numérica estrita (SA1 a SA23) | Filtre e ordene livremente</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-slate-400">Status:</span>
+                    <select id="statusTableFilter" onchange="filterTableByStatus()" class="bg-slate-950 text-xs text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none">
+                        <option value="">Todos os Status</option>
+                        <option value="Abaixo do Mercado">Abaixo do Mercado</option>
+                        <option value="Média do Mercado">Média do Mercado</option>
+                        <option value="Acima do Mercado">Acima do Mercado</option>
+                        <option value="Imóvel Próprio">Imóvel Próprio</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table id="agenciasDataTable" class="w-full text-left text-xs text-slate-300">
+                    <thead>
+                        <tr class="text-slate-400 border-b border-slate-800 bg-slate-950/50">
+                            <th class="py-3 px-2">Cód</th>
+                            <th class="py-3 px-2">Cidade / UF</th>
+                            <th class="py-3 px-2">Edifício / Endereço</th>
+                            <th class="py-3 px-2">Área (m²)</th>
+                            <th class="py-3 px-2">Aluguel (R$)</th>
+                            <th class="py-3 px-2">Val. m² (R$)</th>
+                            <th class="py-3 px-2">Média Mercado (R$)</th>
+                            <th class="py-3 px-2">Dif. (%)</th>
+                            <th class="py-3 px-2">Status</th>
+                            <th class="py-3 px-2">Observações / Histórico</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60">
+                        <!-- Populated via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-6 mt-8">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+            <div class="flex items-center space-x-3">
+                <img src="awakelogo_2.png" alt="Grupo Awake Brasil" class="h-6 object-contain" onerror="this.onerror=null; this.src='awakelogo.png';">
+                <span>© 2026 Grupo Awake Brasil & Banco Sofisa. Relatório de Avaliação Comercial e Mercadológica.</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="hover:text-slate-400 transition">Metodologia ABNT NBR 14.653</span>
+                <span>•</span>
+                <span class="hover:text-slate-400 transition">Amostragem Raio 3km</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- EMBEDDED MASTER DATASET & JAVASCRIPT LOGIC -->
+    <script>
+        // MASTER DATASET INCORPORATED (2024, 2025, 2026)
+        const masterDataset = [
+            // 2024
+            {Ano: 2024, Cod: "SA1", Cidade: "Barueri", UF: "SP", Endereco: "Ed. Alpha Premium, Alameda Rio Negro 967", Area: 92.55, Aluguel: 0.00, ValorM2: 0.00, MktM2: 0.00, Garagem: "2", Desde: "Próprio", Status: "Imóvel Próprio", Obs: "Imóvel Próprio"},
+            {Ano: 2024, Cod: "SA2", Cidade: "Bauru", UF: "SP", Endereco: "Ed. Metropolitan Square, R. Luso Brasileira 4-44", Area: 74.62, Aluguel: 3200.00, ValorM2: 42.88, MktM2: 34.09, Garagem: "S/Info", Desde: "Jan/23", Status: "Acima do Mercado", Obs: "5 Amostras encontradas"},
+            {Ano: 2024, Cod: "SA3", Cidade: "Belo Horizonte", UF: "MG", Endereco: "Ed. Empresarial Ruy Soares Rodrigues, R. Rio de Janeiro 2702", Area: 148.28, Aluguel: 11000.06, ValorM2: 74.22, MktM2: 65.86, Garagem: "2", Desde: "Mai/13", Status: "Acima do Mercado", Obs: "5 Amostras encontradas"},
+            {Ano: 2024, Cod: "SA4", Cidade: "Campinas", UF: "SP", Endereco: "Ed. Galleria Plaza, Av. José Bonifácio C. Nogueira 150", Area: 132.74, Aluguel: 8294.08, ValorM2: 62.48, MktM2: 80.10, Garagem: "4", Desde: "Abr/11", Status: "Abaixo do Mercado", Obs: "Agência passando por Retrofit"},
+            {Ano: 2024, Cod: "SA5", Cidade: "Curitiba", UF: "PR", Endereco: "Ed. Augusto Prolik, R. Comendador Araújo 565", Area: 144.94, Aluguel: 9565.35, ValorM2: 66.00, MktM2: 69.40, Garagem: "1", Desde: "Nov/11", Status: "Média do Mercado", Obs: "Agência trocou salas em Dez/23"},
+            {Ano: 2024, Cod: "SA6", Cidade: "Fortaleza", UF: "CE", Endereco: "Ed. Corporate Plaza Business, Av. Santos Dumont 2456", Area: 65.29, Aluguel: 3000.00, ValorM2: 45.95, MktM2: 41.23, Garagem: "2", Desde: "Mar/23", Status: "Média do Mercado", Obs: "Agência trocando para 4 salas (130,56m²)"},
+            {Ano: 2024, Cod: "SA7", Cidade: "Goiânia", UF: "GO", Endereco: "Ed. New Times Square Urba Office, Av. T-10", Area: 77.00, Aluguel: 2702.50, ValorM2: 35.10, MktM2: 70.24, Garagem: "S/Info", Desde: "Mar/18", Status: "Abaixo do Mercado", Obs: "Agência trocando para 2 salas (130,67m²)"},
+            {Ano: 2024, Cod: "SA8", Cidade: "Londrina", UF: "PR", Endereco: "Ed. Torre Montenello, Av. Ayrton Senna 550", Area: 104.47, Aluguel: 4523.88, ValorM2: 43.30, MktM2: 67.70, Garagem: "1", Desde: "Mar/11", Status: "Abaixo do Mercado", Obs: "3 Amostras encontradas"},
+            {Ano: 2024, Cod: "SA9", Cidade: "Manaus", UF: "AM", Endereco: "Ed. Platinum Offices, Av. Theomario Pinto da Costa 811", Area: 91.80, Aluguel: 9465.00, ValorM2: 103.11, MktM2: 72.25, Garagem: "3", Desde: "Fev/12", Status: "Acima do Mercado", Obs: "Salas 1705 e 1706 (R$ 4.765 + R$ 4.700)"},
+            {Ano: 2024, Cod: "SA10", Cidade: "Porto Alegre", UF: "RS", Endereco: "Ed. Carlos Gomes, Av. Carlos Gomes 777", Area: 71.88, Aluguel: 5175.22, ValorM2: 72.00, MktM2: 50.90, Garagem: "2", Desde: "Jun/17", Status: "Acima do Mercado", Obs: "Agência ampliando para +1 sala"},
+            {Ano: 2024, Cod: "SA11", Cidade: "Recife", UF: "PE", Endereco: "Ed. Empresarial Center, R. Antonio Lumack do Monte 128", Area: 135.94, Aluguel: 4466.39, ValorM2: 32.85, MktM2: 91.85, Garagem: "2", Desde: "Abr/07", Status: "Abaixo do Mercado", Obs: "Agência com Retrofit em planejamento"},
+            {Ano: 2024, Cod: "SA12", Cidade: "Ribeirão Preto", UF: "SP", Endereco: "Centro Empresarial New Century, Av. Pres. Vargas 2001", Area: 75.41, Aluguel: 2624.53, ValorM2: 34.80, MktM2: 39.67, Garagem: "2", Desde: "Jun/06", Status: "Média do Mercado", Obs: "Agência trocando para 2 salas (150m²)"},
+            {Ano: 2024, Cod: "SA13", Cidade: "Rio de Janeiro", UF: "RJ", Endereco: "Ed. Rio Branco, Av. Rio Branco 1", Area: 152.02, Aluguel: 14428.30, ValorM2: 94.91, MktM2: 61.60, Garagem: "4", Desde: "Ago/11", Status: "Acima do Mercado", Obs: "Agência com Retrofit em planejamento"},
+            {Ano: 2024, Cod: "SA14", Cidade: "Sorocaba", UF: "SP", Endereco: "Ed. Campolim Office, Av. Antonio C. Comitre 540", Area: 113.00, Aluguel: 6492.59, ValorM2: 57.46, MktM2: 51.60, Garagem: "6", Desde: "Jan/11", Status: "Acima do Mercado", Obs: "Agência passando por Retrofit"},
+            {Ano: 2024, Cod: "SA15", Cidade: "Guarulhos", UF: "SP", Endereco: "Ed. Monaco Business, R. Diogo Farias 181", Area: 90.80, Aluguel: 5500.00, ValorM2: 60.57, MktM2: 83.82, Garagem: "2", Desde: "Fev/20", Status: "Abaixo do Mercado", Obs: "Sala 203 locada em Jan/24"},
+            {Ano: 2024, Cod: "SA16", Cidade: "São Bernardo do Campo", UF: "SP", Endereco: "Cond. Domo Business, R. José Versolato 111", Area: 56.64, Aluguel: 2410.00, ValorM2: 42.55, MktM2: 53.24, Garagem: "1", Desde: "Fev/20", Status: "Abaixo do Mercado", Obs: "5 Amostras encontradas"},
+            {Ano: 2024, Cod: "SA18", Cidade: "Blumenau", UF: "SC", Endereco: "Rua Sete de Setembro 777", Area: 63.70, Aluguel: 3680.00, ValorM2: 57.77, MktM2: 82.44, Garagem: "1", Desde: "Jan/22", Status: "Abaixo do Mercado", Obs: "4 Amostras encontradas"},
+            {Ano: 2024, Cod: "SA19", Cidade: "São José do Rio Preto", UF: "SP", Endereco: "Rua Jair Martins Mil Homens 500", Area: 80.73, Aluguel: 4154.47, ValorM2: 51.46, MktM2: 70.55, Garagem: "2", Desde: "Mar/22", Status: "Abaixo do Mercado", Obs: "5 Amostras encontradas"},
+            {Ano: 2024, Cod: "SA20", Cidade: "Salvador", UF: "BA", Endereco: "Ed. Boulevard Side, R. Ewerton Visco 290", Area: 65.10, Aluguel: 3500.00, ValorM2: 53.76, MktM2: 60.03, Garagem: "2", Desde: "Abr/23", Status: "Abaixo do Mercado", Obs: "5 Amostras encontradas"},
+            {Ano: 2024, Cod: "SA21", Cidade: "Florianópolis", UF: "SC", Endereco: "Ed. Mapil, R. Álvaro De Carvalho 267", Area: 102.90, Aluguel: 2600.00, ValorM2: 25.27, MktM2: 32.64, Garagem: "0", Desde: "Abr/24", Status: "Abaixo do Mercado", Obs: "Edifício Mapil"},
+
+            // 2025
+            {Ano: 2025, Cod: "SA1", Cidade: "Barueri", UF: "SP", Endereco: "Ed. Alpha Premium, Alameda Rio Negro 967", Area: 92.55, Aluguel: 0.00, ValorM2: 0.00, MktM2: 0.00, Garagem: "2", Desde: "Próprio", Status: "Imóvel Próprio", Obs: "Imóvel Próprio"},
+            {Ano: 2025, Cod: "SA2", Cidade: "Bauru", UF: "SP", Endereco: "Ed. Metropolitan Square, R. Luso Brasileira 4-44", Area: 74.62, Aluguel: 3142.80, ValorM2: 42.12, MktM2: 42.22, Garagem: "S/Info", Desde: "Jan/23", Status: "Média do Mercado", Obs: "4 Amostras encontradas"},
+            {Ano: 2025, Cod: "SA3", Cidade: "Belo Horizonte", UF: "MG", Endereco: "Ed. Empresarial Ruy Soares Rodrigues, R. Rio de Janeiro 2702", Area: 148.28, Aluguel: 11061.87, ValorM2: 74.60, MktM2: 74.46, Garagem: "2", Desde: "Mai/13", Status: "Média do Mercado", Obs: "3 Amostras encontradas"},
+            {Ano: 2025, Cod: "SA4", Cidade: "Campinas", UF: "SP", Endereco: "Ed. Galleria Plaza, Av. José Bonifácio C. Nogueira 150", Area: 132.74, Aluguel: 8737.81, ValorM2: 65.83, MktM2: 98.97, Garagem: "4", Desde: "Abr/11", Status: "Abaixo do Mercado", Obs: "Sala 503 locada em Mai/25"},
+            {Ano: 2025, Cod: "SA5", Cidade: "Curitiba", UF: "PR", Endereco: "Ed. Augusto Prolik, R. Comendador Araújo 565", Area: 144.94, Aluguel: 9131.22, ValorM2: 63.00, MktM2: 67.81, Garagem: "1", Desde: "Dez/23", Status: "Média do Mercado", Obs: "Troca de salas em Dez/23"},
+            {Ano: 2025, Cod: "SA6", Cidade: "Fortaleza", UF: "CE", Endereco: "Ed. Corporate Plaza Business, Av. Santos Dumont 2456", Area: 130.56, Aluguel: 8380.80, ValorM2: 64.19, MktM2: 69.28, Garagem: "4", Desde: "Jun/24", Status: "Média do Mercado", Obs: "Troca de salas em Jun/24"},
+            {Ano: 2025, Cod: "SA7", Cidade: "Goiânia", UF: "GO", Endereco: "Ed. Concept Lourenzzo Office, Av. T7", Area: 130.67, Aluguel: 8213.18, ValorM2: 62.85, MktM2: 72.11, Garagem: "2", Desde: "Jun/24", Status: "Abaixo do Mercado", Obs: "Troca de salas em Jun/24"},
+            {Ano: 2025, Cod: "SA8", Cidade: "Londrina", UF: "PR", Endereco: "Ed. Torre Montenello, Av. Ayrton Senna 550", Area: 104.47, Aluguel: 4523.88, ValorM2: 43.30, MktM2: 67.43, Garagem: "1", Desde: "Mar/11", Status: "Abaixo do Mercado", Obs: "Mudando para Torre Siena"},
+            {Ano: 2025, Cod: "SA9", Cidade: "Manaus", UF: "AM", Endereco: "Ed. Platinum Offices, Av. Theomario Pinto da Costa 811", Area: 91.80, Aluguel: 9872.00, ValorM2: 107.54, MktM2: 96.87, Garagem: "3", Desde: "Fev/12", Status: "Acima do Mercado", Obs: "Salas 1705 e 1706 (R$ 4.969,90 + R$ 4.902,10)"},
+            {Ano: 2025, Cod: "SA10", Cidade: "Porto Alegre", UF: "RS", Endereco: "Ed. Carlos Gomes, Av. Carlos Gomes 777", Area: 71.88, Aluguel: 5584.08, ValorM2: 77.69, MktM2: 67.73, Garagem: "2", Desde: "Jun/17", Status: "Acima do Mercado", Obs: "Ampliação SL 1105 locada Jul/24"},
+            {Ano: 2025, Cod: "SA11", Cidade: "Recife", UF: "PE", Endereco: "Ed. Empresarial Center, R. Antonio Lumack do Monte 128", Area: 135.94, Aluguel: 6797.00, ValorM2: 50.00, MktM2: 78.62, Garagem: "2", Desde: "Abr/07", Status: "Abaixo do Mercado", Obs: "5 Amostras encontradas"},
+            {Ano: 2025, Cod: "SA12", Cidade: "Ribeirão Preto", UF: "SP", Endereco: "Centro Empresarial New Century, Av. Pres. Vargas 2001", Area: 150.82, Aluguel: 6847.75, ValorM2: 45.40, MktM2: 46.66, Garagem: "2", Desde: "Jun/24", Status: "Média do Mercado", Obs: "Troca de salas em Jun/24"},
+            {Ano: 2025, Cod: "SA13", Cidade: "Rio de Janeiro", UF: "RJ", Endereco: "Ed. Rio Branco, Av. Rio Branco 1", Area: 152.02, Aluguel: 10988.67, ValorM2: 72.28, MktM2: 78.51, Garagem: "4", Desde: "Ago/11", Status: "Abaixo do Mercado", Obs: "5 Amostras encontradas"},
+            {Ano: 2025, Cod: "SA14", Cidade: "Sorocaba", UF: "SP", Endereco: "Ed. Ilimité, Av. Eng. Carlos R. Mendes 3200", Area: 78.85, Aluguel: 5000.00, ValorM2: 63.41, MktM2: 64.03, Garagem: "2", Desde: "Jul/25", Status: "Média do Mercado", Obs: "Troca de salas em Jul/25"},
+            {Ano: 2025, Cod: "SA15", Cidade: "Guarulhos", UF: "SP", Endereco: "Ed. Monaco Business, R. Diogo Farias 181", Area: 90.80, Aluguel: 6845.80, ValorM2: 75.39, MktM2: 96.39, Garagem: "2", Desde: "Fev/20", Status: "Abaixo do Mercado", Obs: "Salas 202 e 203 (R$ 4.212,80 + R$ 2.633,00)"},
+            {Ano: 2025, Cod: "SA16", Cidade: "São Bernardo do Campo", UF: "SP", Endereco: "Cond. Domo Business, R. José Versolato 111", Area: 79.36, Aluguel: 4634.08, ValorM2: 58.39, MktM2: 63.14, Garagem: "2", Desde: "Jun/24", Status: "Média do Mercado", Obs: "Troca de salas em Jun/24"},
+            {Ano: 2025, Cod: "SA18", Cidade: "Blumenau", UF: "SC", Endereco: "Rua Sete de Setembro 777", Area: 63.70, Aluguel: 3855.17, ValorM2: 60.52, MktM2: 75.50, Garagem: "1", Desde: "Jan/22", Status: "Abaixo do Mercado", Obs: "4 Amostras encontradas"},
+            {Ano: 2025, Cod: "SA19", Cidade: "São José do Rio Preto", UF: "SP", Endereco: "Rua Jair Martins Mil Homens 500", Area: 80.73, Aluguel: 4454.60, ValorM2: 55.18, MktM2: 75.73, Garagem: "2", Desde: "Mar/22", Status: "Abaixo do Mercado", Obs: "4 Amostras encontradas"},
+            {Ano: 2025, Cod: "SA20", Cidade: "Salvador", UF: "BA", Endereco: "Ed. Boulevard Side, R. Ewerton Visco 290", Area: 65.10, Aluguel: 3800.30, ValorM2: 58.38, MktM2: 64.43, Garagem: "2", Desde: "Abr/23", Status: "Abaixo do Mercado", Obs: "4 Amostras encontradas"},
+            {Ano: 2025, Cod: "SA21", Cidade: "Florianópolis", UF: "SC", Endereco: "Ed. The Office Avenida, Av. Prof. Othon Gama Deça 677", Area: 53.59, Aluguel: 3687.25, ValorM2: 68.80, MktM2: 67.11, Garagem: "1", Desde: "Ago/24", Status: "Média do Mercado", Obs: "Edifício The Office Avenida"},
+            {Ano: 2025, Cod: "SA22", Cidade: "São José dos Campos", UF: "SP", Endereco: "Ed. Conlife Center, Av. Salmão 325", Area: 91.36, Aluguel: 5148.05, ValorM2: 56.35, MktM2: 67.47, Garagem: "2", Desde: "Ago/24", Status: "Abaixo do Mercado", Obs: "Ed. Conlife Center"},
+            {Ano: 2025, Cod: "SA23", Cidade: "Belém", UF: "PA", Endereco: "Ed. London Business, R. Antônio Barreto 366", Area: 63.31, Aluguel: 4900.00, ValorM2: 77.40, MktM2: 99.83, Garagem: "0", Desde: "Em Negociação", Status: "Abaixo do Mercado", Obs: "Ed. London Business"},
+
+            // 2026
+            {Ano: 2026, Cod: "SA1", Cidade: "Barueri", UF: "SP", Endereco: "Ed. Alpha Premium, Alameda Rio Negro 967", Area: 92.55, Aluguel: 0.00, ValorM2: 0.00, MktM2: 0.00, Garagem: "2", Desde: "Próprio", Status: "Imóvel Próprio", Obs: "Imóvel Próprio"},
+            {Ano: 2026, Cod: "SA2", Cidade: "Bauru", UF: "SP", Endereco: "Ed. Metropolitan Square, R. Luso Brasileira 4-44", Area: 74.62, Aluguel: 3280.77, ValorM2: 43.97, MktM2: 50.17, Garagem: "S/Info", Desde: "Jan/23", Status: "Abaixo do Mercado", Obs: "5 Amostras encontradas"},
+            {Ano: 2026, Cod: "SA3", Cidade: "Belo Horizonte", UF: "MG", Endereco: "Ed. Empresarial Ruy Soares Rodrigues, R. Rio de Janeiro 2702", Area: 148.28, Aluguel: 11575.14, ValorM2: 78.06, MktM2: 73.34, Garagem: "2", Desde: "Mai/13", Status: "Média do Mercado", Obs: "5 Amostras encontradas"},
+            {Ano: 2026, Cod: "SA4", Cidade: "Campinas", UF: "SP", Endereco: "Ed. Galleria Plaza, Av. José Bonifácio C. Nogueira 150", Area: 132.74, Aluguel: 8951.18, ValorM2: 67.43, MktM2: 107.96, Garagem: "4", Desde: "Abr/11", Status: "Abaixo do Mercado", Obs: "Sala 503 locada em Mai/25"},
+            {Ano: 2026, Cod: "SA5", Cidade: "Curitiba", UF: "PR", Endereco: "Ed. Augusto Prolik, R. Comendador Araújo 565", Area: 144.94, Aluguel: 10471.99, ValorM2: 72.25, MktM2: 69.50, Garagem: "1", Desde: "Dez/23", Status: "Média do Mercado", Obs: "Troca de salas em Dez/23"},
+            {Ano: 2026, Cod: "SA6", Cidade: "Fortaleza", UF: "CE", Endereco: "Ed. Corporate Plaza Business, Av. Santos Dumont 2456", Area: 130.56, Aluguel: 8757.94, ValorM2: 67.08, MktM2: 87.08, Garagem: "4", Desde: "Jun/24", Status: "Abaixo do Mercado", Obs: "Troca de salas em Jun/24"},
+            {Ano: 2026, Cod: "SA7", Cidade: "Goiânia", UF: "GO", Endereco: "Ed. Concept Lourenzzo Office, Av. T7", Area: 130.67, Aluguel: 8586.88, ValorM2: 65.71, MktM2: 72.21, Garagem: "2", Desde: "Jun/24", Status: "Abaixo do Mercado", Obs: "Troca de salas em Jun/24"},
+            {Ano: 2026, Cod: "SA8", Cidade: "Londrina", UF: "PR", Endereco: "Ed. Torre Siena, Av. Ayrton Senna 600", Area: 138.52, Aluguel: 10647.78, ValorM2: 76.87, MktM2: 90.67, Garagem: "3", Desde: "Nov/25", Status: "Abaixo do Mercado", Obs: "Troca de salas realizada em Nov/25"},
+            {Ano: 2026, Cod: "SA9", Cidade: "Manaus", UF: "AM", Endereco: "Ed. Platinum Offices, Av. Theomario Pinto da Costa 811", Area: 91.80, Aluguel: 11188.07, ValorM2: 121.87, MktM2: 115.48, Garagem: "3", Desde: "Fev/12", Status: "Acima do Mercado", Obs: "Salas 1705 e 1706 (R$ 5.188,07 + R$ 6.000,00)"},
+            {Ano: 2026, Cod: "SA10", Cidade: "Porto Alegre", UF: "RS", Endereco: "Ed. Carlos Gomes, Av. Carlos Gomes 777", Area: 71.88, Aluguel: 5843.18, ValorM2: 81.29, MktM2: 86.82, Garagem: "2", Desde: "Jun/17", Status: "Abaixo do Mercado", Obs: "Em negociações"},
+            {Ano: 2026, Cod: "SA11", Cidade: "Recife", UF: "PE", Endereco: "Ed. Empresarial Center, R. Antonio Lumack do Monte 128", Area: 135.94, Aluguel: 8156.40, ValorM2: 60.00, MktM2: 76.47, Garagem: "2", Desde: "Abr/07", Status: "Abaixo do Mercado", Obs: "4 Amostras encontradas"},
+            {Ano: 2026, Cod: "SA12", Cidade: "Ribeirão Preto", UF: "SP", Endereco: "Centro Empresarial New Century, Av. Pres. Vargas 2001", Area: 150.82, Aluguel: 7165.49, ValorM2: 47.51, MktM2: 50.44, Garagem: "2", Desde: "Jun/24", Status: "Média do Mercado", Obs: "Troca de salas em Jun/24"},
+            {Ano: 2026, Cod: "SA13", Cidade: "Rio de Janeiro", UF: "RJ", Endereco: "Ed. Rio Branco, Av. Rio Branco 1", Area: 152.02, Aluguel: 11472.17, ValorM2: 75.46, MktM2: 82.38, Garagem: "4", Desde: "Ago/11", Status: "Abaixo do Mercado", Obs: "5 Amostras encontradas"},
+            {Ano: 2026, Cod: "SA14", Cidade: "Sorocaba", UF: "SP", Endereco: "Ed. Ilimité, Av. Eng. Carlos R. Mendes 3200", Area: 78.85, Aluguel: 5232.00, ValorM2: 66.35, MktM2: 75.86, Garagem: "2", Desde: "Jul/25", Status: "Abaixo do Mercado", Obs: "Troca de salas em Jul/25"},
+            {Ano: 2026, Cod: "SA15", Cidade: "Guarulhos", UF: "SP", Endereco: "Ed. Monaco Business, R. Diogo Farias 181", Area: 90.80, Aluguel: 7156.92, ValorM2: 78.82, MktM2: 110.89, Garagem: "2", Desde: "Fev/20", Status: "Abaixo do Mercado", Obs: "Salas 202 e 203 (R$ 4.408,33 + R$ 2.748,59)"},
+            {Ano: 2026, Cod: "SA16", Cidade: "São Bernardo do Campo", UF: "SP", Endereco: "Cond. Domo Business, R. José Versolato 111", Area: 79.36, Aluguel: 4849.14, ValorM2: 61.10, MktM2: 59.01, Garagem: "2", Desde: "Jun/24", Status: "Média do Mercado", Obs: "Troca de salas em Jun/24"},
+            {Ano: 2026, Cod: "SA18", Cidade: "Blumenau", UF: "SC", Endereco: "Rua Sete de Setembro 777", Area: 63.70, Aluguel: 4024.41, ValorM2: 63.18, MktM2: 68.05, Garagem: "1", Desde: "Jan/22", Status: "Abaixo do Mercado", Obs: "4 Amostras encontradas"},
+            {Ano: 2026, Cod: "SA19", Cidade: "São José do Rio Preto", UF: "SP", Endereco: "Rua Jair Martins Mil Homens 500", Area: 80.73, Aluguel: 4650.16, ValorM2: 57.60, MktM2: 71.96, Garagem: "2", Desde: "Mar/22", Status: "Abaixo do Mercado", Obs: "5 Amostras encontradas"},
+            {Ano: 2026, Cod: "SA20", Cidade: "Salvador", UF: "BA", Endereco: "Ed. Boulevard Side, R. Ewerton Visco 290", Area: 65.10, Aluguel: 4500.00, ValorM2: 69.12, MktM2: 69.92, Garagem: "2", Desde: "Abr/23", Status: "Média do Mercado", Obs: "5 Amostras encontradas"},
+            {Ano: 2026, Cod: "SA21", Cidade: "Florianópolis", UF: "SC", Endereco: "Centro Executivo CARL HOEPCKE, R. Cristóvão Nunes Píres 86", Area: 130.70, Aluguel: 13900.00, ValorM2: 106.35, MktM2: 118.97, Garagem: "1", Desde: "Fev/26", Status: "Abaixo do Mercado", Obs: "Centro Executivo Carl Hoepcke"},
+            {Ano: 2026, Cod: "SA22", Cidade: "São José dos Campos", UF: "SP", Endereco: "Ed. Conlife Center, Av. Salmão 325", Area: 91.36, Aluguel: 5310.73, ValorM2: 58.13, MktM2: 73.68, Garagem: "2", Desde: "Ago/24", Status: "Abaixo do Mercado", Obs: "Ed. Conlife Center"},
+            {Ano: 2026, Cod: "SA23", Cidade: "Belém", UF: "PA", Endereco: "Ed. London Business, R. Antônio Barreto 366", Area: 63.31, Aluguel: 5006.73, ValorM2: 79.08, MktM2: 87.90, Garagem: "0", Desde: "Out/25", Status: "Abaixo do Mercado", Obs: "Ed. London Business"}
+        ];
+
+        // GLOBAL CHART INSTANCES
+        let barChartM2Instance = null;
+        let doughnutStatusInstance = null;
+        let lineEvolucaoInstance = null;
+        let dataTableInstance = null;
+
+        // HELPER FUNCTIONS
+        function formatBRL(val) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+        }
+
+        function getCodeNumber(cod) {
+            const match = cod.match(/\d+/);
+            return match ? parseInt(match[0], 10) : 0;
+        }
+
+        // POPULATE AGENCY DROPDOWN
+        function populateAgencyDropdown() {
+            const select = document.getElementById("agencySelector");
+            const selectedYear = parseInt(document.getElementById("yearSelector").value);
+            const dataYear = masterDataset.filter(d => d.Ano === selectedYear);
+            
+            const sortedAgencies = [...dataYear].sort((a, b) => getCodeNumber(a.Cod) - getCodeNumber(b.Cod));
+            
+            const currentSelected = select.value;
+            select.innerHTML = `<option value="ALL">Todas as Agências</option>`;
+            
+            sortedAgencies.forEach(ag => {
+                const option = document.createElement("option");
+                option.value = ag.Cod;
+                option.text = `${ag.Cod} - ${ag.Cidade}/${ag.UF}`;
+                select.appendChild(option);
+            });
+
+            // Restore selection if still valid
+            if (sortedAgencies.some(a => a.Cod === currentSelected)) {
+                select.value = currentSelected;
+            } else {
+                select.value = "ALL";
+            }
+        }
+
+        // MAIN RENDERER
+        function renderDashboard() {
+            const selectedYear = parseInt(document.getElementById("yearSelector").value);
+            const selectedAgency = document.getElementById("agencySelector").value;
+            
+            let dataFiltered = masterDataset.filter(d => d.Ano === selectedYear);
+            if (selectedAgency !== "ALL") {
+                dataFiltered = dataFiltered.filter(d => d.Cod === selectedAgency);
+            }
+
+            // 1. UPDATE KPIs
+            const totalAgencies = dataFiltered.length;
+            const proprioCount = dataFiltered.filter(d => d.Status === 'Imóvel Próprio').length;
+            const locadasData = dataFiltered.filter(d => d.Status !== 'Imóvel Próprio');
+            const locadasCount = locadasData.length;
+
+            const totalRent = locadasData.reduce((acc, c) => acc + c.Aluguel, 0);
+            const totalArea = dataFiltered.reduce((acc, c) => acc + c.Area, 0);
+            
+            const avgM2 = locadasCount > 0 ? (locadasData.reduce((acc, c) => acc + c.ValorM2, 0) / locadasCount) : 0;
+            const avgMktM2 = locadasCount > 0 ? (locadasData.reduce((acc, c) => acc + c.MktM2, 0) / locadasCount) : 0;
+            const diffPercent = avgMktM2 > 0 ? (((avgM2 - avgMktM2) / avgMktM2) * 100) : 0;
+
+            const countBelow = dataFiltered.filter(d => d.Status === 'Abaixo do Mercado').length;
+            const countAvg = dataFiltered.filter(d => d.Status === 'Média do Mercado').length;
+            const countAbove = dataFiltered.filter(d => d.Status === 'Acima do Mercado').length;
+            const belowPercent = totalAgencies > 0 ? ((countBelow / totalAgencies) * 100).toFixed(1) : "0.0";
+
+            const uniqueStates = [...new Set(dataFiltered.map(d => d.UF))].length;
+
+            const marketTotalRent = locadasData.reduce((acc, c) => acc + (c.Area * c.MktM2), 0);
+            const monthlySavings = marketTotalRent - totalRent;
+            const annualSavings = monthlySavings * 12;
+
+            // Set KPI Elements
+            document.getElementById("summaryTotalAgencies").innerText = totalAgencies;
+            document.getElementById("summaryStates").innerText = uniqueStates;
+            document.getElementById("avgDiscountPercent").innerText = diffPercent.toFixed(1) + "%";
+            document.getElementById("annualSavingsVal").innerText = formatBRL(Math.max(0, annualSavings));
+
+            document.getElementById("kpiAgencies").innerText = totalAgencies;
+            document.getElementById("kpiProprioCount").innerText = proprioCount;
+            document.getElementById("kpiLocadasCount").innerText = locadasCount;
+
+            document.getElementById("kpiTotalRent").innerText = formatBRL(totalRent);
+            document.getElementById("kpiTotalArea").innerText = Math.round(totalArea) + " m²";
+            
+            const totalVagas = dataFiltered.reduce((acc, c) => acc + (parseInt(c.Garagem) || 0), 0);
+            document.getElementById("kpiTotalVagas").innerText = totalVagas;
+
+            document.getElementById("kpiAvgM2").innerText = formatBRL(avgM2);
+            document.getElementById("kpiMarketAvgM2").innerText = formatBRL(avgMktM2);
+            document.getElementById("kpiDiffPercent").innerText = diffPercent.toFixed(1) + "%";
+            document.getElementById("kpiDiffPercent").className = diffPercent <= 0 ? "font-bold text-emerald-400" : "font-bold text-rose-400";
+
+            document.getElementById("kpiBelowPercent").innerText = belowPercent + "%";
+            document.getElementById("kpiBelowCount").innerText = countBelow;
+            document.getElementById("kpiAvgCount").innerText = countAvg;
+            document.getElementById("kpiAboveCount").innerText = countAbove;
+
+            // Priority Renegotiation Card Content
+            const aboveAgencies = locadasData.filter(d => d.Status === 'Acima do Mercado');
+            const priorityCard = document.getElementById("priorityRenegotiationCard");
+            if(aboveAgencies.length > 0) {
+                priorityCard.innerHTML = aboveAgencies.map(a => `
+                    <div class="flex justify-between items-center bg-slate-950 p-2.5 rounded-lg border border-rose-900/40">
+                        <div>
+                            <span class="font-bold text-white">${a.Cod} - ${a.Cidade}/${a.UF}</span>
+                            <div class="text-[10px] text-slate-400">Atual: <strong class="text-rose-400">${formatBRL(a.ValorM2)}/m²</strong> | Mercado: ${formatBRL(a.MktM2)}/m²</div>
+                        </div>
+                        <span class="text-xs bg-rose-500/10 text-rose-400 font-bold px-2 py-0.5 rounded border border-rose-500/20">
+                            +${(((a.ValorM2 - a.MktM2)/a.MktM2)*100).toFixed(1)}%
+                        </span>
+                    </div>
+                `).join('');
+            } else {
+                priorityCard.innerHTML = `<div class="text-emerald-400 font-semibold py-2 flex items-center"><i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> Nenhuma agência com valor acima do mercado neste ciclo.</div>`;
+            }
+
+            // 2. RENDER CHARTS
+            renderBarChart(locadasData);
+            renderDoughnutChart(countBelow, countAvg, countAbove, proprioCount);
+            renderLineChart(selectedAgency);
+
+            // 3. RENDER DATATABLE
+            renderDataTable(dataFiltered);
+        }
+
+        // BAR CHART RENDERER
+        function renderBarChart(locadasData) {
+            const ctx = document.getElementById('barChartM2').getContext('2d');
+            const sortedData = [...locadasData].sort((a, b) => getCodeNumber(a.Cod) - getCodeNumber(b.Cod));
+
+            const labels = sortedData.map(d => `${d.Cod} (${d.Cidade})`);
+            const valuesSofisa = sortedData.map(d => d.ValorM2);
+            const valuesMarket = sortedData.map(d => d.MktM2);
+
+            if (barChartM2Instance) barChartM2Instance.destroy();
+
+            barChartM2Instance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Banco Sofisa (R$/m²)',
+                            data: valuesSofisa,
+                            backgroundColor: '#00A86B',
+                            borderRadius: 4,
+                            barPercentage: 0.7
+                        },
+                        {
+                            label: 'Média Mercado (R$/m²)',
+                            data: valuesMarket,
+                            backgroundColor: '#F59E0B',
+                            borderRadius: 4,
+                            barPercentage: 0.7
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: R$ ${context.parsed.y.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#94A3B8', font: { size: 10 } },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: { color: '#94A3B8', font: { size: 10 } },
+                            grid: { color: '#1E293B' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // DOUGHNUT CHART RENDERER
+        function renderDoughnutChart(below, avg, above, proprio) {
+            const ctx = document.getElementById('doughnutChartStatus').getContext('2d');
+            
+            if (doughnutStatusInstance) doughnutStatusInstance.destroy();
+
+            doughnutStatusInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Abaixo do Mercado', 'Média do Mercado', 'Acima do Mercado', 'Imóvel Próprio'],
+                    datasets: [{
+                        data: [below, avg, above, proprio],
+                        backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#38BDF8'],
+                        borderWidth: 2,
+                        borderColor: '#020617'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94A3B8', font: { size: 11 }, boxWidth: 12 }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        // HISTORICAL LINE CHART RENDERER
+        function renderLineChart(selectedAgency) {
+            const ctx = document.getElementById('lineChartEvolucao').getContext('2d');
+
+            const years = [2024, 2025, 2026];
+            
+            const avgSofisaByYear = years.map(yr => {
+                let locs = masterDataset.filter(d => d.Ano === yr && d.Status !== 'Imóvel Próprio');
+                if (selectedAgency !== "ALL") {
+                    locs = locs.filter(d => d.Cod === selectedAgency);
+                }
+                return locs.length > 0 ? (locs.reduce((acc, c) => acc + c.ValorM2, 0) / locs.length) : 0;
+            });
+
+            const avgMktByYear = years.map(yr => {
+                let locs = masterDataset.filter(d => d.Ano === yr && d.Status !== 'Imóvel Próprio');
+                if (selectedAgency !== "ALL") {
+                    locs = locs.filter(d => d.Cod === selectedAgency);
+                }
+                return locs.length > 0 ? (locs.reduce((acc, c) => acc + c.MktM2, 0) / locs.length) : 0;
+            });
+
+            if (lineEvolucaoInstance) lineEvolucaoInstance.destroy();
+
+            lineEvolucaoInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Ciclo 2024', 'Ciclo 2025', 'Ciclo 2026 (Atual)'],
+                    datasets: [
+                        {
+                            label: 'Custo Médio Sofisa (R$/m²)',
+                            data: avgSofisaByYear,
+                            borderColor: '#00A86B',
+                            backgroundColor: 'rgba(0, 168, 107, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            borderWidth: 3,
+                            pointRadius: 5
+                        },
+                        {
+                            label: 'Média de Mercado (R$/m²)',
+                            data: avgMktByYear,
+                            borderColor: '#F59E0B',
+                            borderDash: [5, 5],
+                            tension: 0.3,
+                            borderWidth: 2,
+                            pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#94A3B8', font: { size: 11 } }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#94A3B8' }, grid: { display: false } },
+                        y: { ticks: { color: '#94A3B8' }, grid: { color: '#1E293B' } }
+                    }
+                }
+            });
+        }
+
+        // DATATABLE RENDERER
+        function renderDataTable(dataFiltered) {
+            const tableBody = document.querySelector("#agenciasDataTable tbody");
+            tableBody.innerHTML = "";
+
+            const sortedData = [...dataFiltered].sort((a, b) => getCodeNumber(a.Cod) - getCodeNumber(b.Cod));
+
+            sortedData.forEach(d => {
+                let statusBadge = "";
+                if (d.Status === 'Abaixo do Mercado') statusBadge = `<span class="bg-emerald-500/10 text-emerald-400 font-semibold px-2 py-0.5 rounded border border-emerald-500/20 text-[11px]">Abaixo do Mercado</span>`;
+                else if (d.Status === 'Média do Mercado') statusBadge = `<span class="bg-amber-500/10 text-amber-400 font-semibold px-2 py-0.5 rounded border border-amber-500/20 text-[11px]">Média do Mercado</span>`;
+                else if (d.Status === 'Acima do Mercado') statusBadge = `<span class="bg-rose-500/10 text-rose-400 font-semibold px-2 py-0.5 rounded border border-rose-500/20 text-[11px]">Acima do Mercado</span>`;
+                else statusBadge = `<span class="bg-sky-500/10 text-sky-400 font-semibold px-2 py-0.5 rounded border border-sky-500/20 text-[11px]">Imóvel Próprio</span>`;
+
+                const diff = d.MktM2 > 0 ? (((d.ValorM2 - d.MktM2) / d.MktM2) * 100).toFixed(1) : 0;
+                let diffText = diff > 0 ? `<span class="text-rose-400 font-bold">+${diff}%</span>` : (diff < 0 ? `<span class="text-emerald-400 font-bold">${diff}%</span>` : `<span class="text-slate-400">0%</span>`);
+
+                const numVal = getCodeNumber(d.Cod);
+
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-slate-800/40 transition border-b border-slate-800/60";
+                tr.innerHTML = `
+                    <td class="py-2.5 px-2 font-bold text-white" data-order="${numVal}">${d.Cod}</td>
+                    <td class="py-2.5 px-2"><strong class="text-slate-200">${d.Cidade}</strong> <span class="text-slate-500 text-[10px]">${d.UF}</span></td>
+                    <td class="py-2.5 px-2 text-slate-400 truncate max-w-[200px]" title="${d.Endereco}">${d.Endereco}</td>
+                    <td class="py-2.5 px-2 text-slate-300 font-medium">${d.Area.toFixed(2)} m²</td>
+                    <td class="py-2.5 px-2 font-semibold text-white" data-order="${d.Aluguel}">${formatBRL(d.Aluguel)}</td>
+                    <td class="py-2.5 px-2 font-bold text-sofisa-green" data-order="${d.ValorM2}">${formatBRL(d.ValorM2)}</td>
+                    <td class="py-2.5 px-2 text-slate-400" data-order="${d.MktM2}">${formatBRL(d.MktM2)}</td>
+                    <td class="py-2.5 px-2" data-order="${diff}">${diffText}</td>
+                    <td class="py-2.5 px-2">${statusBadge}</td>
+                    <td class="py-2.5 px-2 text-slate-400 text-[11px] truncate max-w-[180px]" title="${d.Obs}">${d.Obs}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            // Initialize or Re-initialize DataTables
+            if ($.fn.DataTable.isDataTable('#agenciasDataTable')) {
+                $('#agenciasDataTable').DataTable().destroy();
+            }
+
+            dataTableInstance = $('#agenciasDataTable').DataTable({
+                pageLength: 25,
+                language: {
+                    search: "Buscar:",
+                    lengthMenu: "Exibir _MENU_ por página",
+                    info: "Exibindo _START_ a _END_ de _TOTAL_ agências",
+                    paginate: { first: "Primeira", last: "Última", next: "→", previous: "←" }
+                },
+                order: [[0, 'asc']]
+            });
+        }
+
+        // FILTER TABLE BY STATUS DROPDOWN
+        function filterTableByStatus() {
+            const val = document.getElementById("statusTableFilter").value;
+            if (dataTableInstance) {
+                dataTableInstance.column(8).search(val).draw();
+            }
+        }
+
+        // EXPORT SUMMARY PDF / PRINT
+        function exportSummaryPDF() {
+            window.print();
+        }
+
+        // INITIALIZATION ON DOM LOADED
+        document.addEventListener("DOMContentLoaded", function() {
+            lucide.createIcons();
+            populateAgencyDropdown();
+            renderDashboard();
+            
+            // Re-populate agencies if year changes
+            document.getElementById("yearSelector").addEventListener("change", function() {
+                populateAgencyDropdown();
+            });
+        });
+    </script>
+</body>
+</html>
